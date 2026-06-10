@@ -6,9 +6,7 @@ import os
 import plotly.express as px
 from sklearn.decomposition import PCA
 
-# ==========================================
 # 1. KONFIGURASI HALAMAN STREAMLIT
-# ==========================================
 st.set_page_config(
     page_title="Dashboard Prediksi Iklim",
     page_icon="🌤️",
@@ -16,9 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==========================================
 # 2. FUNGSI CACHE UNTUK LOADING (Super Ringan)
-# ==========================================
 @st.cache_data
 def load_dataset(kota):
     file_path = f"STREAMLIT_DATASET_{kota}.csv"
@@ -33,27 +29,15 @@ def load_models(kota):
         kmeans = joblib.load(f"model_kmeans_{kota}.pkl")
         scaler = joblib.load(f"minmax_params_{kota}.pkl")
         
-        # LOGIKA MODEL TERBAIK (Sesuai Hasil Analisis Bab 4)
-        if kota == 'Jakarta':
-            # Jakarta dimenangkan oleh KNN
-            model = joblib.load(f"model_knn_{kota}.pkl")
-            algoritma = "K-Nearest Neighbors (KNN)"
-        elif kota == 'Bogor':
-            # Bogor dimenangkan oleh Naïve Bayes
-            model = joblib.load(f"model_nb_{kota}.pkl")
-            algoritma = "Gaussian Naïve Bayes (NB)"
-        elif kota == 'Poso':
-            # Poso dimenangkan oleh Naïve Bayes
-            model = joblib.load(f"model_nb_{kota}.pkl")
-            algoritma = "Gaussian Naïve Bayes (NB)"
+        # LOGIKA MODEL TERBAIK (Champion Model Universal: Naïve Bayes)
+        model = joblib.load(f"model_nb_{kota}.pkl")
+        algoritma = "Gaussian Naïve Bayes (NB)"
             
         return model, kmeans, scaler, algoritma
     except Exception as e:
         return None, None, None, str(e)
 
-# ==========================================
 # 3. SIDEBAR: NAVIGASI & KONTROL
-# ==========================================
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/1163/1163661.png", width=120)
     st.title("Sistem AI Cuaca")
@@ -67,9 +51,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Dikembangkan untuk Skripsi Teknik Informatika")
 
-# ==========================================
 # 4. MEMUAT DATA BERDASARKAN KOTA
-# ==========================================
 df = load_dataset(kota_pilihan)
 model, kmeans, scaler, nama_algoritma = load_models(kota_pilihan)
 
@@ -77,9 +59,7 @@ if df is None or model is None:
     st.error(f"⚠️ Menunggu Data... Pastikan file dataset, model K-Means, Parameter Scaler, dan Model Terbaik ({nama_algoritma}) untuk **{kota_pilihan}** berada di folder yang sama dengan app.py.")
     st.stop()
 
-# ==========================================
 # 5. HALAMAN 1: DASHBOARD KLASTERING
-# ==========================================
 if menu == "📊 Dashboard Klastering":
     st.title(f"Visualisasi Klastering Iklim - {kota_pilihan.upper()}")
     st.info(f"💡 **Mesin Prediksi Aktif:** {nama_algoritma} (Klasifikasi) & K-Means K=2 (Klastering)")
@@ -116,9 +96,7 @@ if menu == "📊 Dashboard Klastering":
     st.markdown("### 📋 Cuplikan Basis Data Historis")
     st.dataframe(df[['TANGGAL', 'TAVG', 'SS', 'RH_AVG', 'RR', 'Prediksi_Final_Cuaca', 'Label_Prediksi', 'Cluster_Iklim']].head(20), use_container_width=True)
 
-# ==========================================
 # 6. HALAMAN 2: SIMULASI PREDIKSI HARIAN
-# ==========================================
 elif menu == "🔮 Simulasi Cuaca Harian":
     st.title(f"Simulasi Mesin Prediksi - {kota_pilihan.upper()}")
     st.markdown(f"Lakukan simulasi pengujian *real-time* menggunakan **{nama_algoritma}**.")
