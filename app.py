@@ -60,6 +60,7 @@ if df is None or model is None:
     st.stop()
 
 # 5. HALAMAN 1: DASHBOARD KLASTERING
+# 5. HALAMAN 1: DASHBOARD KLASTERING
 if menu == "📊 Dashboard Klastering":
     st.title(f"Visualisasi Klastering Iklim - {kota_pilihan.upper()}")
     st.info(f"💡 **Mesin Prediksi Aktif:** {nama_algoritma} (Klasifikasi) & K-Means K=2 (Klastering)")
@@ -67,34 +68,66 @@ if menu == "📊 Dashboard Klastering":
     # Deretan Kartu Metrik
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Data Terekam", f"{len(df)} Hari")
-    col2.metric("Prediksi Mayoritas", df['Label_Prediksi'].mode()[0])
+    col2.metric("Kategori Mayoritas", df['Kategori_BMKG'].mode()[0])
     col3.metric("Populasi Klaster", f"Klaster 0: {len(df[df['Cluster_Iklim']==0])} | Klaster 1: {len(df[df['Cluster_Iklim']==1])}")
     
     st.markdown("---")
-    st.subheader("Peta Sebaran Varians Iklim (PCA 2D)")
     
-    # Reduksi Dimensi secara live untuk plot
-    fitur_cols = ['TN_norm', 'TX_norm', 'SS_norm', 'RH_AVG_norm', 'BULAN_norm', 'RH_AVG_norm_kemarin', 'SS_norm_kemarin']
-    pca = PCA(n_components=2)
-    pca_result = pca.fit_transform(df[fitur_cols])
-    df['PCA1'] = pca_result[:, 0]
-    df['PCA2'] = pca_result[:, 1]
-    df['Cluster_Iklim_Str'] = df['Cluster_Iklim'].astype(str)
+    # MEMBUAT LAYOUT 2 KOLOM UNTUK GRAFIK
+    grafik_col1, grafik_col2 = st.columns(2)
     
-    # Plotly Interaktif
-    fig = px.scatter(
-        df, x='PCA1', y='PCA2', 
-        color='Cluster_Iklim_Str', symbol='Label_Prediksi',
-        hover_data=['TANGGAL', 'TAVG', 'RH_AVG'],
-        color_discrete_sequence=['#ef553b', '#636efa'],
-        labels={'Cluster_Iklim_Str': 'Klaster K-Means', 'Label_Prediksi': 'Prediksi Cuaca'},
-        title=f"Batas Keputusan (Decision Boundary) {nama_algoritma} pada K-Means"
-    )
-    fig.update_layout(height=550)
-    st.plotly_chart(fig, use_container_width=True)
+    with grafik_col1:
+        st.subheader("Persentase Kategori Cuaca BMKG")
+        # Menghitung persentase
+        kategori_persen = df['Kategori_BMKG'].value_counts(normalize=True).reset_index()
+        kategori_persen.columns = ['Kategori', 'Persentase']
+        kategori_persen['Persentase'] = kategori_persen['Persentase'] * 100
+        
+        # Palet warna seragam
+        color_map = {
+            'Berawan / Cerah': '#1f77b4', 'Sangat Ringan': '#2ca02c', 
+            'Hujan Ringan': '#ff7f0e', 'Hujan Sedang': '#d62728', 
+            'Hujan Lebat': '#9467bd', 'Hujan Sangat Lebat': '#8c564b'
+        }
+        
+        # Plot Bar Horizontal
+        fig_bar = px.bar(
+            kategori_persen, 
+            x='Persentase', y='Kategori', 
+            orientation='h',
+            color='Kategori',
+            color_discrete_map=color_map,
+            text_auto='.1f',
+            labels={'Persentase': 'Persentase (%)'}
+        )
+        fig_bar.update_layout(showlegend=False, height=450, yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    with grafik_col2:
+        st.subheader("Peta Sebaran Varians Iklim (PCA 2D)")
+        
+        # Reduksi Dimensi secara live untuk plot
+        fitur_cols = ['TN_norm', 'TX_norm', 'SS_norm', 'RH_AVG_norm', 'BULAN_norm', 'RH_AVG_norm_kemarin', 'SS_norm_kemarin']
+        pca = PCA(n_components=2)
+        pca_result = pca.fit_transform(df[fitur_cols])
+        df['PCA1'] = pca_result[:, 0]
+        df['PCA2'] = pca_result[:, 1]
+        df['Cluster_Iklim_Str'] = df['Cluster_Iklim'].astype(str)
+        
+        # Plot Scatter Interaktif dengan Kategori Baru
+        fig_pca = px.scatter(
+            df, x='PCA1', y='PCA2', 
+            color='Kategori_BMKG', symbol='Cluster_Iklim_Str',
+            hover_data=['TANGGAL', 'TAVG', 'RH_AVG', 'RR'],
+            color_discrete_map=color_map,
+            labels={'Cluster_Iklim_Str': 'Klaster K-Means', 'Kategori_BMKG': 'Kategori Aktual'},
+        )
+        fig_pca.update_layout(height=450, legend=dict(yanchor="top", y=0.99, xanchor="left", x=1.01))
+        st.plotly_chart(fig_pca, use_container_width=True)
     
     st.markdown("### 📋 Cuplikan Basis Data Historis")
-    st.dataframe(df[['TANGGAL', 'TAVG', 'SS', 'RH_AVG', 'RR', 'Prediksi_Final_Cuaca', 'Label_Prediksi', 'Cluster_Iklim']].head(20), use_container_width=True)
+    # Menambahkan Kategori_BMKG ke tampilan tabel
+    st.dataframe(df[['TANGGAL', 'TAVG', 'SS', 'RH_AVG', 'RR', 'Kategori_BMKG', 'Prediksi_Final_Kode', 'Cluster_Iklim']].head(20), use_container_width=True)
 
 # 6. HALAMAN 2: SIMULASI PREDIKSI HARIAN
 elif menu == "🔮 Simulasi Cuaca Harian":
