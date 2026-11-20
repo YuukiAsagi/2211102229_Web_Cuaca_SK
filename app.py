@@ -30,8 +30,8 @@ def load_models(kota):
         scaler = joblib.load(f"minmax_params_{kota}.pkl")
         
         # LOGIKA MODEL TERBAIK (Champion Model Universal: Naïve Bayes)
-        model = joblib.load(f"model_nb_{kota}.pkl")
-        algoritma = "Gaussian Naïve Bayes (NB)"
+        model = joblib.load(f"model_knn_{kota}.pkl")
+        algoritma = "K-Nearest Neighbor Manhattan Distance (KNN)"
             
         return model, kmeans, scaler, algoritma
     except Exception as e:
